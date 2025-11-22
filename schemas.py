@@ -1,48 +1,41 @@
 """
-Database Schemas
+Database Schemas for the Medical Payments App
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
+Each Pydantic model name maps to a MongoDB collection with the lowercase name.
+- Setting -> "setting"
+- Service -> "service"
+- Payment -> "payment"
 
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
 """
+from typing import List, Optional
+from pydantic import BaseModel, Field, EmailStr
+from datetime import datetime
 
-from pydantic import BaseModel, Field
-from typing import Optional
 
-# Example schemas (replace with your own):
+class Setting(BaseModel):
+    practice_name: str = Field(..., description="Practice display name")
+    practice_address: Optional[str] = Field(None, description="Practice address")
+    practice_phone: Optional[str] = Field(None, description="Practice phone")
+    practice_email: Optional[EmailStr] = Field(None, description="Email for notifications")
 
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class Service(BaseModel):
+    name: str = Field(..., description="Service name, e.g., Office visit")
+    price: float = Field(..., ge=0, description="Service price in USD")
+    category: Optional[str] = Field(None, description="Optional category")
+    active: bool = Field(True, description="Whether service is visible")
 
-# Add your own schemas here:
-# --------------------------------------------------
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Payment(BaseModel):
+    payment_id: str = Field(..., description="Unique payment ID (Stripe payment intent id)")
+    created_at: Optional[datetime] = None
+    patient_name: str = Field(...)
+    patient_email: Optional[EmailStr] = None
+    patient_phone: Optional[str] = None
+    dob: Optional[str] = Field(None, description="Optional DOB as string")
+    comment: Optional[str] = None
+    services: List[dict] = Field(..., description="List of services with name and price or custom amount")
+    amount: float = Field(..., ge=0, description="Total amount paid")
+    status: str = Field(..., description="succeeded, processing, requires_payment_method, refunded, etc.")
+    card_last4: Optional[str] = Field(None, description="Last 4 digits of the card")
+    refunded: bool = Field(False, description="Marked refunded manually in admin UI")
